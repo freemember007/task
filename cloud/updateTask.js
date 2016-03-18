@@ -31,6 +31,7 @@ function onRequest(request, response, modules) {
   var db = modules.oData;
   var rel = modules.oRelation;
   var arr = modules.oArray
+  var functions = modules.oFunctions;
   var ep = modules.oEvent;
   var body = request.body;
   var baseJson = {};
@@ -47,9 +48,9 @@ function onRequest(request, response, modules) {
   delete baseJson.file;
   delete baseJson.follower;
   delete baseJson.comment;
-  if(baseJson.priority) baseJson.priority = parseInt(baseJson.priority);
-  if(baseJson.status) baseJson.status = parseInt(baseJson.status);
-  if (baseJson.costHours) baseJson.costHours= parseInt(baseJson.costHours);
+  if (baseJson.priority) baseJson.priority = parseInt(baseJson.priority);
+  if (baseJson.status) baseJson.status = parseInt(baseJson.status);
+  if (baseJson.costHours) baseJson.costHours = parseInt(baseJson.costHours);
   if (baseJson.project) baseJson.project = JSON.parse(baseJson.project);
   if (baseJson.deadline) {
     baseJson.deadline = {
@@ -59,7 +60,7 @@ function onRequest(request, response, modules) {
   } else {
     delete baseJson.deadline //删除可能传来的空值
   }
-  
+
 
   // 构建关系数据relJson
   if (body.team) relJson.team = { '__type': 'Pointer', 'className': 'team', 'objectId': body.team };
@@ -73,7 +74,7 @@ function onRequest(request, response, modules) {
 
   // 构建数组数据arrJson
   if (body.comment) arrJson = { 'comments': { '__op': 'AddUnique', 'objects': [JSON.parse(body.comment)] } };
-  
+
 
   //更新基本数据
   db.update({
@@ -101,6 +102,17 @@ function onRequest(request, response, modules) {
     'objectId': body.objectId,
     'data': arrJson
   }, function(err, data) {
+    functions.run({
+      'name': 'pushComment',
+      'data': {
+        'objectId': body.objectId,
+        'status': body.status,
+        'comment': body.comment
+      }
+    }, function(err, data) {
+      //回调函数
+      // response.send(data)
+    });
     response.send(data)
   })
 

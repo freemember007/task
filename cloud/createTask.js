@@ -16,6 +16,7 @@ function onRequest(request, response, modules) {
 
   var db = modules.oData;
   var rel = modules.oRelation;
+  var functions = modules.oFunctions;
   var body = request.body;
   var baseJson = {};
   var relJson = {};
@@ -68,10 +69,25 @@ function onRequest(request, response, modules) {
       'objectId': task.objectId,
       'data': relJson
     }, function(err, data) {
+      functions.run({
+        'name': 'push',
+        'data': {
+          'title': body.title,
+          'company': body.company,
+          'team': body.team,
+          'assigner': body.assigner,
+          'assignee': body.assignee,
+          'costHours': body.costHours,
+          'deadline': body.deadline,
+          'status': baseJson.status
+        }
+      }, function(err, data) {
+        //回调函数
+        // response.send(data)
+      });
       response.send(task)
     })
   }
-
 
 }
 exports.createTask = onRequest;
