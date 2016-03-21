@@ -7,12 +7,6 @@ var options = require('../AppConfig.json');
 tool.initialize(options.app_key, options.rest_key);
 
 
-//测试在本地代码
-function local() {
-  var updatePush = require('../cloud/updatePush.js').updatePush;
-  tool.test(updatePush);
-}
-
 //测试在服务端代码
 function server() {
   var path = require('path');

@@ -19,9 +19,9 @@ function server() {
   tool.testInServer(path.resolve(__dirname, '../cloud/createTask.js'), {
     'title': '测试通过接口发布任务', 
     'company': 'KbP15556',
-    'team': 'vIJB0003',
-    'assigner': 'EuGz444d',
-    'assignee': '8DRM999C',
+    'team': 'W98PFFFR',
+    'assigner': '8DRM999C', //郭敏
+    'assignee': 'EuGz444d',
     'costHours': 4,
     'priority': 1,
     'project': {"color":"#FF666666","name":"点点医院-微信"},
