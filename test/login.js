@@ -7,12 +7,6 @@ var options = require("../AppConfig.json");
 tool.initialize(options.app_key, options.rest_key);
 
 
-//测试在本地代码
-function local() {
-  var summary = require("../cloud/login.js").login;
-  tool.test(summary, {"username": "18989878980", "password": "123456"});
-}
-
 //测试在服务端代码
 function server() {
   var path = require("path");

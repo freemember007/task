@@ -7,12 +7,6 @@ var options = require('../AppConfig.json');
 tool.initialize(options.app_key, options.rest_key);
 
 
-//测试在本地代码
-function local() {
-  var createTask = require('../cloud/createTask.js').createTask;
-  tool.test(createTask);
-}
-
 //测试在服务端代码
 function server() {
   var path = require('path');
