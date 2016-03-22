@@ -70,7 +70,7 @@ function onRequest(request, response, modules) {
             'keys': 'boss',
             'objectId': task.company
           }, function(err, data){
-            var data = JSON.parse(data);
+            data = JSON.parse(data);
             //2.1 如果指派人是自己，push boss
             if (task.assignerId === task.assigneeId) {
               task.assigneeName = '自己';
@@ -93,7 +93,7 @@ function onRequest(request, response, modules) {
   })
 
   function push(userId, message) {
-    message.msg_content = task.assignerName + '给' + task.assigneeName + '创建了一个任务：' + 
+    message.msg_content = task.assignerName + '给' + task.assigneeName + '创建了任务：' + 
                           task.title + '，截止时间：' + task.deadline + '，工作量：' + task.costHours + '小时。';
     var pushBody = {
       'platform': ['android'],
@@ -113,8 +113,9 @@ function onRequest(request, response, modules) {
     db.find({
       'table': 'devices',
       'keys': 'pushId',
-      'where': { 'userId': userId }
+      'where': {'userId': userId}
     }, function(err, data) {
+      response.send(data) // 为什么有时为空？
       var pushId = JSON.parse(data).results[0].pushId; // 假定推送人已存在，后面考虑可能不存在的情况
       pushBody.audience.registration_id.push(pushId);
       var options = {
@@ -125,7 +126,6 @@ function onRequest(request, response, modules) {
         body: JSON.stringify(pushBody)
       };
       http.post(options, function(error, res, body) {
-
         if (!error && res.statusCode == 200) {
           response.send(body);
         } else {
@@ -138,4 +138,4 @@ function onRequest(request, response, modules) {
 
 
 }
-exports.push = onRequest;
+exports.createPush = onRequest;

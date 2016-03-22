@@ -52,7 +52,7 @@ function onRequest(request, response, modules) {
   ep.once('userLogin', function() {
     rel.query({
       'table': 'company',
-      'keys': 'name,projects,objectId',
+      'keys': 'name,projects,boss,objectId',
       'where': { 'members': userInfo.objectId }
     }, function(err, data) {
       companyInfo = JSON.parse(data).results && JSON.parse(data).results[0];
@@ -71,8 +71,7 @@ function onRequest(request, response, modules) {
     db.find({
       'table': 'team',
       'keys': 'name,objectId,leader',
-      "where": { 'company': companyInfo.objectId },
-      // 'include': 'leader'
+      "where": { 'company': companyInfo.objectId }
     }, function(err, data) {
       var teams = JSON.parse(data).results;
 

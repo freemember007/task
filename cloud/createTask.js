@@ -70,7 +70,7 @@ function onRequest(request, response, modules) {
       'data': relJson
     }, function(err, data) {
       functions.run({
-        'name': 'push',
+        'name': 'createPush',
         'data': {
           'title': body.title,
           'company': body.company,
