@@ -1,27 +1,3 @@
-// 云方法：<任务更新推送>
-// 输入示例&说明：
-// {
-//     'objectId': '26171f438b',
-//     'updaterId': 'VbqZR11R',
-//     'title': '电话问诊讨论', 
-//     'team': 'W98PFFFR',
-//     'assignee': 'EuGz444d',
-//     'costHours': 4,
-//     'priority': 3,
-//     'status': 1,
-//     'project': {"color":"#FF666666","name":"点点医院-微信"},
-//     'file': {'__type': 'File','filename': '1457932579348.png','group': 'group1','url': 'M03/E0/DF/oYYBAFbmSSmAJMEgAAKg1zYPZTU216.png'},
-//     'deadline': '2016-03-09 00:00:00',
-//     'follower': {'action': 'AddRelation' ,'objectId': 'EuGz444d'},
-//     'comment': {
-//       'userName': '肖江平',
-//       'userUrl': 'http://file.bmob.cn/M03/AB/6F/oYYBAFbKrFOASa63AAAyn1JM9O4332.png',
-//       'sendTimg': '2016-03-14 14:27:58',
-//       'userId': 'EuGz444d',
-//       'userMsg': '哈哈'
-//     }
-//   }
-
 function onRequest(request, response, modules) {
 
   var db = modules.oData;
@@ -35,7 +11,7 @@ function onRequest(request, response, modules) {
   var taskUpdate = { // 任务更新事项
     'updaterId': request.body.updaterId
   };
-  var assigneeDisplayName = ''; // 任务负责人个性化展示名
+  // var assigneeDisplayName = ''; // 任务负责人个性化展示名
   var message = { // 要推送的消息体
     'msg_content': '',
     'content_type': 'text',
@@ -102,8 +78,8 @@ function onRequest(request, response, modules) {
       data = JSON.parse(data).results;
       for(var i = 0; i< data.length; i++){
         if(data.objectId !== taskUpdate.updaterId){ //如果不是关注者不是更新者
-          assigneeDisplayName = '你关注的'; //其值可能会受异步影响而变化，后续检查
-          push(data[i].objectId)//通知关注者
+          //assigneeDisplayName = '你关注的'; //其值可能会受异步影响而变化，后续检查
+          push(data[i].objectId, '你关注的')//通知关注者
         }
       }
     })
@@ -117,73 +93,73 @@ function onRequest(request, response, modules) {
     if(taskUpdate.updaterId === task.assigneeId){
       if(task.assignerId === task.assigneeId){//如果指派人是自己
         if(task.superiorId){//如果有上司(即不是老板)
-          assigneeDisplayName = '他的';
-          push(task.superiorId)//通知上司
+          //assigneeDisplayName = '他的';
+          push(task.superiorId, '他的')//通知上司
         }
       }else if(task.assignerId === task.superiorId){//如果指派人是上司
-        assigneeDisplayName = '你指派给他的';
-        push(task.superiorId)//通知指派人兼上司
+        //assigneeDisplayName = '你指派给他的';
+        push(task.superiorId, '你指派给他的')//通知指派人兼上司
       }else{//如果指派人是其他人
-        assigneeDisplayName = '你指派给他的';
-        push(task.assignerId)//通知指派人
-        assigneeDisplayName = '他的';
-        push(task.superiorId)//通知上司
+        //assigneeDisplayName = '你指派给他的';
+        push(task.assignerId, '你指派给他的')//通知指派人
+        //assigneeDisplayName = '他的';
+        push(task.superiorId, '他的')//通知上司
       }
     // 如果更新人是指派人
     }else if(taskUpdate.updaterId === task.assignerId){
       if(task.assignerId === task.assigneeId){//如果指派人是自己
         if(task.superiorId){//如果有上司(即不是老板)
-          assigneeDisplayName = '他的';
-          push(task.superiorId)//通知上司
+          //assigneeDisplayName = '他的';
+          push(task.superiorId, '他的')//通知上司
         }
       }else if(task.assignerId === task.superiorId){//如果指派人是上司
-        assigneeDisplayName = '你的';
-        push(task.assigneeId)//通知自己
+        //assigneeDisplayName = '你的';
+        push(task.assigneeId, '你的')//通知自己
       }else{//如果指派人是其他人
-        assigneeDisplayName = '你的';
-        push(task.assigneeId)//通知自己
+        //assigneeDisplayName = '你的';
+        push(task.assigneeId, '你的')//通知自己
         if(task.superiorId){//如果有上司(即不是老板)
-          assigneeDisplayName = '他指派给' + task.assigneeName  + '的';
-          push(task.superiorId)//通知上司
+          //assigneeDisplayName = '他指派给' + task.assigneeName  + '的';
+          push(task.superiorId, '他指派给' + task.assigneeName  + '的')//通知上司
         }
       }
     // 如果更新人是上司
     }else if(taskUpdate.updaterId === task.superiorId){
       if(task.assignerId === task.assigneeId){//如果指派人是自己
-        assigneeDisplayName = '你的';
-        push(task.assigneeId)//通知自己
+        //assigneeDisplayName = '你的';
+        push(task.assigneeId, '你的')//通知自己
       }else if(task.assignerId === task.superiorId){//如果指派人是上司
-        assigneeDisplayName = "你的";
-        push(task.assigneeId)//通知自己
+        //assigneeDisplayName = "你的";
+        push(task.assigneeId, '你的')//通知自己
       }else{//如果指派人是其他人
-        assigneeDisplayName = "你指派给"+ task.assigneeName  + '的';
-        push(task.assignerId)//通知指派人
-        assigneeDisplayName = "你的";
-        push(task.assigneeId)//通知自己
+        //assigneeDisplayName = "你指派给"+ task.assigneeName  + '的';
+        push(task.assignerId, "你指派给"+ task.assigneeName  + '的')//通知指派人
+        //assigneeDisplayName = "你的";
+        push(task.assigneeId, "你的")//通知自己
       }
     // 如果更新人是其他人
     }else{
       if(task.assignerId === task.assigneeId){//如果指派人是自己
-        assigneeDisplayName = '你的';
-        push(task.assigneeId)//通知自己
+        //assigneeDisplayName = '你的';
+        push(task.assigneeId, '你的')//通知自己
       }else if(task.assignerId === task.superiorId){//如果指派人是上司
-        assigneeDisplayName = "你的";
-        push(task.assigneeId)//通知自己
-        assigneeDisplayName = "你指派给"+ task.assigneeName  + '的';
-        push(task.assignerId)//通知指派人兼上司
+        //assigneeDisplayName = "你的";
+        push(task.assigneeId, "你的")//通知自己
+        //assigneeDisplayName = "你指派给"+ task.assigneeName  + '的';
+        push(task.assignerId, "你指派给"+ task.assigneeName  + '的')//通知指派人兼上司
       }else{//如果指派人是其他人
-        assigneeDisplayName = "你的";
-        push(task.assigneeId)//通知自己
+        //assigneeDisplayName = "你的";
+        push(task.assigneeId, "你的")//通知自己
         if(taskUpdate.updaterId !== task.assignerId){
-          assigneeDisplayName = "你指派给"+ task.assigneeName  + '的';
-          push(task.assignerId)//通知指派人
+          //assigneeDisplayName = "你指派给"+ task.assigneeName  + '的';
+          push(task.assignerId, "你指派给"+ task.assigneeName  + '的')//通知指派人
         }
       }
     }
 
   })
 
-  function push(userId){
+  function push(userId, assigneeDisplayName){
 
     // 查询更新人姓名
     db.findOne({

@@ -37,7 +37,7 @@ function onRequest(request, response, modules) {
     'table': 'task',
     'where': condition,
     'include': 'assignee',
-    'limit': 30
+    'limit': 60
   }, function(err, data) {
     var results = JSON.parse(data).results;
 

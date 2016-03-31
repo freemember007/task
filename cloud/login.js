@@ -20,8 +20,14 @@ function onRequest(request, response, modules) {
     'username': username, //登录用户名
     'password': password //用户密码
   }, function(err, data) { //回调函数
-    userInfo = JSON.parse(data);
-    ep.emit('userLogin');
+    data = JSON.parse(data);
+    if(data.code){
+      response.send(data);
+    }else{
+      userInfo = data;
+      ep.emit('userLogin');
+    }
+    
   });
 
   // 获取当前用户所属团队
