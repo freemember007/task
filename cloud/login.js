@@ -39,6 +39,7 @@ function onRequest(request, response, modules) {
     }, function(err, data) {
       var team = JSON.parse(data).results && JSON.parse(data).results[0];
       userInfo.team = team;
+      ep.emit('queryUserTeam');
     })
   });
 
@@ -55,7 +56,7 @@ function onRequest(request, response, modules) {
   // });
 
   // 获取当前用户所属公司
-  ep.once('userLogin', function() {
+  ep.once('queryUserTeam', function() {
     rel.query({
       'table': 'company',
       'keys': 'name,projects,boss,objectId',
@@ -73,7 +74,6 @@ function onRequest(request, response, modules) {
 
   // 获取当前公司下属所有团队及成员信息
   ep.once('queryMyCompany', function() {
-    // response.send(companyInfo.objectId)
     db.find({
       'table': 'team',
       'keys': 'name,objectId,leader',
@@ -83,9 +83,15 @@ function onRequest(request, response, modules) {
 
       ep.after('queryTeamMembers', teams.length, function(members) {
         for (var i = 0; i < teams.length; i++) {
+
           teams[i].members = JSON.parse(members[i]).results;
           delete teams[i].createdAt;
           delete teams[i].updatedAt;
+          // 自己的团队排前
+          if(teams[i].objectId === userInfo.team.objectId){
+            var arr = teams.splice(i, 1);
+            teams.unshift(arr[0])
+          }
         }
         companyInfo.teams = teams;
         response.send({

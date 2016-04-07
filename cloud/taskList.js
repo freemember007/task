@@ -18,8 +18,8 @@ function onRequest(request, response, modules) {
   var tasksData = [
     [{ 'groupName': '无期限的', 'subGroupName': '', 'tasks': [] }],
     [],
-    [],
-    []
+    [{ 'groupName': '已完成的', 'subGroupName': '', 'tasks': [] }],
+    [{ 'groupName': '已搁置的', 'subGroupName': '', 'tasks': [] }]
   ];
   var now = new Date();
   var nowString = now.toString();
@@ -31,13 +31,14 @@ function onRequest(request, response, modules) {
   var then = new Date();
   var oneDay = 24 * 60 * 60 * 1000;
   var diff, monthAndDate, week;
-  var results = []
+  var weekFormat = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六']
+  var results = [];
 
   rel.query({
     'table': 'task',
     'where': condition,
     'include': 'assignee',
-    'limit': 60
+    'limit': 300
   }, function(err, data) {
     var results = JSON.parse(data).results;
 
@@ -46,9 +47,14 @@ function onRequest(request, response, modules) {
       var status = results[i].status;
       results[i].fileNum = results[i].file ? 1 : 0;
       results[i].commentNum = results[i].comments ? results[i].comments.length : 0; //变态，明明是数组还要判断不为空
-      if (!status) {
+      results[i].checklist = JSON.parse(results[i].checklist||'[]');
+      if (status == 0) {
         tasksData[0][0].tasks.push(results[i]) //无期限的
-      } else {
+      }else if(status == 2){
+        tasksData[2][0].tasks.push(results[i]) //已完成的
+      }else if(status == 3){
+        tasksData[3][0].tasks.push(results[i]) //已搁置的
+      }else {
         results[i].deadline = results[i].deadline || {
           '__type': 'Date',
           'iso': nowString
@@ -60,43 +66,44 @@ function onRequest(request, response, modules) {
       }
     }
 
+    // 非进行中的任务逆序排列
+    tasksData[0][0].tasks.reverse();
+    tasksData[2][0].tasks.reverse();
+    tasksData[3][0].tasks.reverse();
 
-    //生成tasksData并排序
-    for (var i = 1; i < tasks.length; i++) {
-      for (var k in tasks[i]) {
-        tasksData[i].push({ 'groupName': k, subGroupName: k, tasks: tasks[i][k] });
-        sortByDate(tasksData[i]);
-      }
+
+    // 进行中的任务按日期分组
+    for (var k in tasks[1]) {
+      tasksData[1].push({ 'groupName': k, subGroupName: k, tasks: tasks[1][k] });
+      sortByDate(tasksData[1]);
     }
 
-    //个性化GroupName
-    for (var i = 1; i < tasksData.length; i++) {
-      for (var j = 0; j < tasksData[i].length; j++) {
-        then = new Date(tasksData[i][j].groupName);
-        diff = (then - now) / oneDay;
-        monthAndDate = (then.getMonth() + 1) + '月' + then.getDate() + '日';
-        week = weekFormat(then.getDay());
-        if (diff < 0 || diff > 7) {
-          tasksData[i][j].groupName = monthAndDate;
-          tasksData[i][j].subGroupName = week;
-          if (diff < 0) tasksData[i][j].delay = true;
-        } else if (diff === 0) {
-          tasksData[i][j].groupName = '今天';
-          tasksData[i][j].subGroupName = monthAndDate + ('(' + week + ')');
-        } else if (diff === 1) {
-          tasksData[i][j].groupName = '明天';
-          tasksData[i][j].subGroupName = monthAndDate + ('(' + week + ')');
-        } else { //diff >1 && diff < 7
-          tasksData[i][j].groupName = week;
-          tasksData[i][j].subGroupName = monthAndDate;
-        }
+    // 进行中的任务个性化GroupName
+    for (var j = 0; j < tasksData[1].length; j++) {
+      then = new Date(tasksData[1][j].groupName);
+      diff = (then - now) / oneDay;
+      monthAndDate = (then.getMonth() + 1) + '月' + then.getDate() + '日';
+      week = weekFormat[then.getDay()];
+      if (diff < 0 || diff > 7) {
+        tasksData[1][j].groupName = monthAndDate;
+        tasksData[1][j].subGroupName = week;
+        if (diff < 0) tasksData[1][j].delay = true;
+      } else if (diff === 0) {
+        tasksData[1][j].groupName = '今天';
+        tasksData[1][j].subGroupName = monthAndDate + ('(' + week + ')');
+      } else if (diff === 1) {
+        tasksData[1][j].groupName = '明天';
+        tasksData[1][j].subGroupName = monthAndDate + ('(' + week + ')');
+      } else { //diff >1 && diff < 7
+        tasksData[1][j].groupName = week;
+        tasksData[1][j].subGroupName = monthAndDate;
       }
     }
 
     response.send(tasksData);
   })
 
-  // 对日期分组进行排序
+  // 日期分组排序方法
   function sortByDate(arr) {
     arr.sort(function(x, y) {
       if (x.groupName > y.groupName) {
@@ -106,27 +113,6 @@ function onRequest(request, response, modules) {
       }
     })
   }
-
-  // 星期处理
-  function weekFormat(week) {
-    if (week == 0) {
-      str = "星期日";
-    } else if (week == 1) {
-      str = "星期一";
-    } else if (week == 2) {
-      str = "星期二";
-    } else if (week == 3) {
-      str = "星期三";
-    } else if (week == 4) {
-      str = "星期四";
-    } else if (week == 5) {
-      str = "星期五";
-    } else if (week == 6) {
-      str = "星期六";
-    }
-    return str;
-  }
-
 
   //日期delay判断helper
   function isDelay(deadline) {

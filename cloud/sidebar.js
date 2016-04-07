@@ -11,6 +11,7 @@ function onRequest(request, response, modules) {
   var ep = modules.oEvent;
   var companyId = request.body.companyId;
   var userId = request.body.userId;
+  var userTeamId;
   var startTime = new Date();
 
   var mySummary = [
@@ -20,27 +21,42 @@ function onRequest(request, response, modules) {
   ];
   var teamSummary = [];
 
-  //查跟我相关的任务数量 
+  // 获取当前用户所属团队
   rel.query({
-    'table': 'task',
-    'where': { 'company': companyId, $or: [{ 'assignee': userId }, { 'assigner': userId }, { 'followers': userId }], 'status': { $in: [0, 1] } },
-    'keys': 'assignee,assigner,deadline',
-    'count': 1,
+    'table': 'team',
+    'keys': 'name, objectId',
+    'where': { 'members': userId }
   }, function(err, data) {
-    var result = JSON.parse(data); 
-    var tasks = result.results;
-    for (var i = 0; i < tasks.length; i++) {
-      var assignee = tasks[i].assignee.objectId;
-      var assigner = tasks[i].assigner.objectId;
-      if (assignee === userId) mySummary[0].allNum++;
-      if (assignee === userId && isDelay(tasks[i].deadline)) mySummary[0].delayNum++;
-      if (assigner === userId && assignee !== userId) mySummary[1].allNum++;
-      if (assigner === userId && assignee !== userId && isDelay(tasks[i].deadline)) mySummary[1].delayNum++;
-      if (assigner !== userId && assignee !== userId) mySummary[2].allNum++;
-      if (assigner !== userId && assignee !== userId && isDelay(tasks[i].deadline)) mySummary[2].delayNum++;
-    }
-    ep.emit('queryMySummary');
+    var team = JSON.parse(data).results && JSON.parse(data).results[0];
+    userTeamId = team.objectId;
+    ep.emit('queryUserTeam');
+  })
 
+
+
+
+  //查跟我相关的任务数量 
+  ep.once('queryUserTeam', function() {
+    rel.query({
+      'table': 'task',
+      'where': { 'company': companyId, $or: [{ 'assignee': userId }, { 'assigner': userId }, { 'followers': userId }], 'status': { $in: [0, 1] } },
+      'keys': 'assignee,assigner,deadline',
+      'count': 1,
+    }, function(err, data) {
+      var result = JSON.parse(data); 
+      var tasks = result.results;
+      for (var i = 0; i < tasks.length; i++) {
+        var assignee = tasks[i].assignee.objectId;
+        var assigner = tasks[i].assigner.objectId;
+        if (assignee === userId) mySummary[0].allNum++;
+        if (assignee === userId && isDelay(tasks[i].deadline)) mySummary[0].delayNum++;
+        if (assigner === userId && assignee !== userId) mySummary[1].allNum++;
+        if (assigner === userId && assignee !== userId && isDelay(tasks[i].deadline)) mySummary[1].delayNum++;
+        if (assigner !== userId && assignee !== userId) mySummary[2].allNum++;
+        if (assigner !== userId && assignee !== userId && isDelay(tasks[i].deadline)) mySummary[2].delayNum++;
+      }
+      ep.emit('queryMySummary');
+    })
   });
 
   //日期delay判断helper
@@ -69,19 +85,30 @@ function onRequest(request, response, modules) {
 
       // response.send(teamSummary)
       ep.after('queryTeamMembers', teamSummary.length, function(members) {
+        // for (var i = 0; i < teamSummary.length; i++) {
+        //   teamSummary[i].members = JSON.parse(members[i]).results;
+        //   // 自己的团队排前
+        //   if(teamSummary[i].objectId === userTeamId){
+        //     var arr = teamSummary.splice(i, 1);
+        //     teamSummary.unshift(arr[0])
+        //   }
+        // }
         for (var i = 0; i < teamSummary.length; i++) {
           teamSummary[i].members = JSON.parse(members[i]).results;
-        }
-        for (var j = 0; j < teamSummary.length; j++) {
-          delete teamSummary[j].createdAt;
-          delete teamSummary[j].updatedAt;
-          teamSummary[j].delayNum = 0;
-          teamSummary[j].allNum = 0;
-          for (var k = 0; k < teamSummary[j].members.length; k++) {
-            delete teamSummary[j].members[k].createdAt;
-            delete teamSummary[j].members[k].updatedAt;
-            teamSummary[j].members[k].delayNum = 0;
-            teamSummary[j].members[k].allNum = 0;
+          delete teamSummary[i].createdAt;
+          delete teamSummary[i].updatedAt;
+          teamSummary[i].delayNum = 0;
+          teamSummary[i].allNum = 0;
+          for (var j = 0; j < teamSummary[i].members.length; j++) {
+            delete teamSummary[i].members[j].createdAt;
+            delete teamSummary[i].members[j].updatedAt;
+            teamSummary[i].members[j].delayNum = 0;
+            teamSummary[i].members[j].allNum = 0;
+          }
+          // 自己的团队排前，注意位置一定要放在最后面
+          if(teamSummary[i].objectId === userTeamId){
+            var arr = teamSummary.splice(i, 1);
+            teamSummary.unshift(arr[0])
           }
         }
         ep.emit('queryTeamSummary')

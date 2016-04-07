@@ -44,7 +44,6 @@ function onRequest(request, response, modules) {
     //推送完了再更新任务
     // 构建基本数据baseJson
     for (var k in body) baseJson[k] = body[k];
-    // delete baseJson._e;
     delete baseJson.objectId;
     delete baseJson.team;
     delete baseJson.assignee;

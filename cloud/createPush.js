@@ -93,7 +93,7 @@ function onRequest(request, response, modules) {
   })
 
   function push(userId, message) {
-    message.msg_content = task.assignerName + '给' + task.assigneeName + '创建了任务：' + 
+    message.msg_content = task.assignerName + '给' + task.assigneeName + '创建了工作：' + 
                           task.title + '，截止时间：' + task.deadline + '，工作量：' + task.costHours + '小时。';
     var pushBody = {
       'platform': ['android'],
