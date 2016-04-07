@@ -26,4 +26,5 @@ function server() {
 
 
 // local();
+// setInterval(function(){server()},100)
 server();

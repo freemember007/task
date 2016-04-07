@@ -264,8 +264,7 @@ function onRequest(request, response, modules) {
         'isRead': false
       }
     }, function(err, data) {
-      // response.send(data);
-      console.log(data);
+      // response.send(data); //为什么保存的message.msg_content是乱码？
     });
 
     db.find({

@@ -5,13 +5,15 @@ function onRequest(request, response, modules) {
   var body = request.body;
 
   var task = {
+    objectId: body.objectId,
     company: body.company,
     assignerId: body.assigner,
     assignerName: '',
     assigneeId: body.assignee,
     assigneeName: '',
     title: body.title,
-    costHours: body.costHours
+    costHours: body.costHours,
+    // status: body.status
   }
   var deadline = new Date((body.deadline).replace(/-/g, '/'));
   task.deadline = (deadline.getMonth() + 1) + '月' + deadline.getDate() + '日';
@@ -22,17 +24,19 @@ function onRequest(request, response, modules) {
     'title': '',
     'extras': {
       'assignee': task.assigneeId,
-      'status': 1
+      'status': body.status
     }
   }
 
-  // 查询指派人姓名
+  // 查询指派人姓名头像
   db.findOne({
     'table': '_User',
-    'keys': 'name',
+    // 'keys': 'name,avatar',
     'objectId': task.assignerId
   }, function(err, data) {
-    task.assignerName = JSON.parse(data).name; //不变
+    data = JSON.parse(data);
+    task.assignerName = data.name; //不变
+    task.assignerAvatar = 'http://file.bmob.cn/' + data.avatar.url;
     // 查询负责人姓名
     db.findOne({
       'table': '_User',
@@ -110,12 +114,28 @@ function onRequest(request, response, modules) {
       'message': message
     }
 
+    db.insert({
+      'table': 'notification',
+      'data': {
+        'userId': userId,
+        'updaterAvatar': task.assignerAvatar,
+        'updaterName': task.assignerName,
+        'message': message.msg_content,
+        'assigneeId': task.assigneeId,
+        'taskStatus': parseInt(body.status), //明明是int，还是parse，bmob啥情况？
+        'taskId': task.objectId,
+        'isRead': false
+      }
+    }, function(err, data) {
+      // response.send(data||err) 
+    });
+
     db.find({
       'table': 'devices',
       'keys': 'pushId',
       'where': {'userId': userId}
     }, function(err, data) {
-      response.send(data) // 为什么有时为空？
+      // response.send(data) // 为什么有时为空？
       var pushId = JSON.parse(data).results[0].pushId; // 假定推送人已存在，后面考虑可能不存在的情况
       pushBody.audience.registration_id.push(pushId);
       var options = {

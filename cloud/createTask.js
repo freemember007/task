@@ -59,7 +59,7 @@ function onRequest(request, response, modules) {
     'data': baseJson
   }, function(err, data) {
     var task = JSON.parse(data)
-    saveRel(task);
+    setTimeout(function(){saveRel(task)},1000) // 避免数据库反应不过来
   });
 
   // 保存关系数据
@@ -72,6 +72,7 @@ function onRequest(request, response, modules) {
       functions.run({
         'name': 'createPush',
         'data': {
+          'objectId': task.objectId,
           'title': body.title,
           'company': body.company,
           'team': body.team,

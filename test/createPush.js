@@ -11,6 +11,7 @@ tool.initialize(options.app_key, options.rest_key);
 function server() {
   var path = require('path');
   tool.testInServer(path.resolve(__dirname, '../cloud/createPush.js'), {
+    'objectId': '14d8a15bdc',
     'title': '测试通过接口发布任务', 
     'company': 'KbP15556',
     'team': 'W98PFFFR',
