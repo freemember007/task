@@ -11,7 +11,7 @@ function onRequest(request, response, modules) {
   rel.query({
     'table': 'task',
     'where': { 'objectId': request.body.taskId},
-    'include': 'assignee,assigner,file',
+    'include': 'assignee,assigner,file,team',
     // 'limit': 1
   }, function(err, data) {
     data = JSON.parse(data).results[0];

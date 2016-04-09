@@ -3,7 +3,8 @@ function onRequest(request, response, modules) {
   // 请求PostBody示例
   // {
   //   'subject': 'assigner',  //查询主体类型（assignee:负责人; assigner:托付人; followers:关注人; team:团队）
-  //   'objectId': 'EuGz444d' //查询主体ID
+  //   'objectId': 'EuGz444d', //查询主体ID
+  //   'userId': 'EuGz444d', //当前用户ID
   // }
 
   var db = modules.oData;
@@ -11,9 +12,11 @@ function onRequest(request, response, modules) {
   var ep = modules.oEvent;
   var subject = request.body.subject;
   var objectId = request.body.objectId;
+  var userId = request.body.userId;
   var condition = {};
   condition[subject] = objectId;
-  if (subject === 'assigner') condition['assignee'] = { '$ne': objectId }; //托付的任务排除自己
+  if (subject === 'assigner') condition.assignee = { '$ne': objectId }; //托付的任务排除自己
+  condition.status = { '$ne': 4 }; //排除删除的任务
   var tasks = [{}, {}, {}, {}];
   var tasksData = [
     [{ 'groupName': '无期限的', 'subGroupName': '', 'tasks': [] }],
@@ -37,8 +40,9 @@ function onRequest(request, response, modules) {
   rel.query({
     'table': 'task',
     'where': condition,
-    'include': 'assignee',
-    'limit': 300
+    'include': 'assignee,team',
+    'limit': 300,
+    'order': '-updatedAt'//按更新时间倒序排列
   }, function(err, data) {
     var results = JSON.parse(data).results;
 
@@ -48,6 +52,8 @@ function onRequest(request, response, modules) {
       results[i].fileNum = results[i].file ? 1 : 0;
       results[i].commentNum = results[i].comments ? results[i].comments.length : 0; //变态，明明是数组还要判断不为空
       results[i].checklist = JSON.parse(results[i].checklist||'[]');
+      results[i].followed = (results[i].followers || []).toString().indexOf(userId)!== -1 ? true : false;
+      results[i].liked = (results[i].likers || []).toString().indexOf(userId)!== -1 ? true : false;
       if (status == 0) {
         tasksData[0][0].tasks.push(results[i]) //无期限的
       }else if(status == 2){
@@ -67,9 +73,9 @@ function onRequest(request, response, modules) {
     }
 
     // 非进行中的任务逆序排列
-    tasksData[0][0].tasks.reverse();
-    tasksData[2][0].tasks.reverse();
-    tasksData[3][0].tasks.reverse();
+    // tasksData[0][0].tasks.reverse();
+    // tasksData[2][0].tasks.reverse();
+    // tasksData[3][0].tasks.reverse();
 
 
     // 进行中的任务按日期分组

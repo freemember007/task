@@ -7,7 +7,14 @@ function onRequest(request, response, modules) {
 
   var db = modules.oData;
   var rel = modules.oRelation;
-
+  var now = new Date();
+  now.setDate(now.getDate() - 7);
+  var year = now.getFullYear();
+  var month = (now.getMonth()+1).toString();
+  var date = now.getDate().toString();
+  var then = year + '-' + month.replace(/^(\d)$/, '0$1') + '-' + date.replace(/^(\d)$/, '0$1') + ' 00:00:00';
+  // response.send(then)
+  
   if(request.body.action === 'find'){
     find()
   }else if(request.body.action === 'check'){
@@ -19,7 +26,10 @@ function onRequest(request, response, modules) {
   function find() {
     db.find({
       'table': 'notification',
-      'where': { 'userId': request.body.userId},
+      'where': { 
+        'userId': request.body.userId,
+        'createdAt': {'$gt':{'__type':'Date','iso':then}}
+      },
       'order': '-createdAt'
     }, function(err, data) {
       data = JSON.parse(data).results;
@@ -32,7 +42,8 @@ function onRequest(request, response, modules) {
       'table': 'notification',
       'where': { 
         'isRead': {'$ne': true},
-        'userId': request.body.userId
+        'userId': request.body.userId,
+        'createdAt': {'$gt':{'__type':'Date','iso':then}}
       },
       'limit': 0,
       'count': 1

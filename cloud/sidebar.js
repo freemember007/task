@@ -52,7 +52,8 @@ function onRequest(request, response, modules) {
         if (assignee === userId && isDelay(tasks[i].deadline)) mySummary[0].delayNum++;
         if (assigner === userId && assignee !== userId) mySummary[1].allNum++;
         if (assigner === userId && assignee !== userId && isDelay(tasks[i].deadline)) mySummary[1].delayNum++;
-        if (assigner !== userId && assignee !== userId) mySummary[2].allNum++;
+        //以下数据准确的前提：前端要限制关注自己托付的工作 (另外逻辑上，leader不能关注自己团队的任务)
+        if (assigner !== userId && assignee !== userId) mySummary[2].allNum++; 
         if (assigner !== userId && assignee !== userId && isDelay(tasks[i].deadline)) mySummary[2].delayNum++;
       }
       ep.emit('queryMySummary');
