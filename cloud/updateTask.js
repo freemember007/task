@@ -3,8 +3,8 @@ function onRequest(request, response, modules) {
   // 云方法：<更新任务>
   // 输入示例&说明：(没有变更的字段最好不要传过来)
   // {
-  //     'objectId': '26171f438b',
-  //     'updaterId': 'VbqZR11R', //操作者ID
+  //     'objectId': '4e20f3d7c8',
+  //     'updaterId': '8DRM999C', //操作者ID
   //     'title': '电话问诊讨论', 
   //     'team': 'W98PFFFR',
   //     'assignee': 'EuGz444d', 
@@ -12,9 +12,11 @@ function onRequest(request, response, modules) {
   //     'priority': 3,
   //     'status': 1,
   //     'project': {"color":"#FF666666","name":"点点医院-微信"},
+  //     'progress': "1", // "0":进度0%; "1":进度25%; "2":进度50%, "3":进度75%
   //     'file': {'__type': 'File','filename': '1457932579348.png','group': 'group1','url': 'M03/E0/DF/oYYBAFbmSSmAJMEgAAKg1zYPZTU216.png'},
   //     'deadline': '2016-03-09 00:00:00',
   //     'follower': {'action': 'AddUnique' ,'userId': 'EuGz444d'}, // 添加：AddUnique，移除：Remove
+  //     'liker': {'action': 'AddUnique' ,'objectId': 'EuGz444d'}, // 添加：AddUnique，移除：Remove
   //     'comment': {
   //       'userName': '肖江平',
   //       'userUrl': 'http://file.bmob.cn/M03/AB/6F/oYYBAFbKrFOASa63AAAyn1JM9O4332.png',

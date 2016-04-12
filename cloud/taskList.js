@@ -40,7 +40,7 @@ function onRequest(request, response, modules) {
   rel.query({
     'table': 'task',
     'where': condition,
-    'include': 'assignee,team',
+    'include': 'assigner,assignee,team',
     'limit': 300,
     'order': '-updatedAt'//按更新时间倒序排列
   }, function(err, data) {

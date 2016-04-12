@@ -24,6 +24,7 @@ function onRequest(request, response, modules) {
   }
   var priorityDict = ['不紧急', '一般', '紧急', '非常紧急'];
   var statusDict = ['暂停了', '启动了', '完成了', '搁置了'];
+  var progressDict = ['0%', '25%', '50%', '75%'];
   var costHoursDict = {
     '0': '0小时',
     '2': '2小时',
@@ -206,6 +207,12 @@ function onRequest(request, response, modules) {
 
         message.msg_content = update.userName + '将' + assigneeDisplayName + '工作<' + task.title +
                               '>的项目改为：' + JSON.parse(request.body.project).name;
+        doPush(userId)
+      }
+      if(request.body.progress){
+
+        message.msg_content = update.userName + '将' + assigneeDisplayName + '工作<' + task.title +
+                              '>的进度更新为：' + progressDict[request.body.progress];
         doPush(userId)
       }
       if(request.body.follower){

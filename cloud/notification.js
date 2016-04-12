@@ -2,7 +2,8 @@ function onRequest(request, response, modules) {
 
   // 请求PostBody示例
   // {
-  //   'taskId': '4e20f3d7c8' //任务ID
+  //   'action': 'check', // check:检查, find:查询, read:标记为已读
+  //   'userId': 'EuGz444d',
   // }
 
   var db = modules.oData;
