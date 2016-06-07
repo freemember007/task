@@ -19,5 +19,5 @@ function local() {
 }
 
 
-// local();
-server();
+local();
+// server();

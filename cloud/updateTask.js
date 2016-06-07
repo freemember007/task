@@ -28,7 +28,7 @@ function onRequest(request, response, modules) {
 
   var db = modules.oData;
   var rel = modules.oRelation;
-  var arr = modules.oArray
+  var arr = modules.oArray;
   var functions = modules.oFunctions;
   var ep = modules.oEvent;
   var body = request.body;
@@ -60,6 +60,7 @@ function onRequest(request, response, modules) {
     }
     if (baseJson.costHours) baseJson.costHours = parseInt(baseJson.costHours);
     if (baseJson.project) baseJson.project = JSON.parse(baseJson.project);
+    // if (baseJson.value) baseJson.valueObject = JSON.parse(baseJson.valueObject);
     if (baseJson.deadline) {
       baseJson.deadline = {
         '__type': 'Date',
@@ -67,7 +68,7 @@ function onRequest(request, response, modules) {
       };
     } else {
       // delete baseJson.deadline //删除可能传来的空值或赋值为undefined均可
-      baseJson.deadline = undefined //todo:怎么清除时间？我简直要吐血了。
+      baseJson.deadline = undefined; //todo:怎么清除时间？我简直要吐血了。
     }
 
 

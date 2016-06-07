@@ -12,12 +12,12 @@ function onRequest(request, response, modules) {
   var companyId = request.body.companyId;
   var userId = request.body.userId;
   var userTeamId;
-  var startTime = new Date();
+  // var startTime = new Date();
 
   var mySummary = [
     { 'title': '我负责的', 'field': 'assignee', 'delayNum': 0, 'allNum': 0 },
     { 'title': '我托付的', 'field': 'assigner', 'delayNum': 0, 'allNum': 0 },
-    { 'title': '我关注的', 'field': 'followers', 'delayNum': 0, 'allNum': 0 },
+    { 'title': '我关注的', 'field': 'followers', 'delayNum': 0, 'allNum': 0 }
   ];
   var teamSummary = [];
 
@@ -25,14 +25,13 @@ function onRequest(request, response, modules) {
   rel.query({
     'table': 'team',
     'keys': 'name, objectId',
-    'where': { 'members': userId }
+    'where': { 'members': {'__type':'Pointer','className':'_User','objectId':userId} }
   }, function(err, data) {
+    // response.send(data) //经常查不出结果
     var team = JSON.parse(data).results && JSON.parse(data).results[0];
     userTeamId = team.objectId;
     ep.emit('queryUserTeam');
   })
-
-
 
 
   //查跟我相关的任务数量 
@@ -84,16 +83,7 @@ function onRequest(request, response, modules) {
     }, function(err, data) {
       teamSummary = JSON.parse(data).results;
 
-      // response.send(teamSummary)
       ep.after('queryTeamMembers', teamSummary.length, function(members) {
-        // for (var i = 0; i < teamSummary.length; i++) {
-        //   teamSummary[i].members = JSON.parse(members[i]).results;
-        //   // 自己的团队排前
-        //   if(teamSummary[i].objectId === userTeamId){
-        //     var arr = teamSummary.splice(i, 1);
-        //     teamSummary.unshift(arr[0])
-        //   }
-        // }
         for (var i = 0; i < teamSummary.length; i++) {
           teamSummary[i].members = JSON.parse(members[i]).results;
           delete teamSummary[i].createdAt;
@@ -120,7 +110,10 @@ function onRequest(request, response, modules) {
         rel.query({
           'table': '_User',
           'keys': 'username,name,avatar,objectId',
-          'where': { "$relatedTo": { "object": { "__type": "Pointer", "className": "team", "objectId": teamSummary[i].objectId }, "key": "members" } }
+          'where': { 
+            "$relatedTo": { "object": { "__type": "Pointer", "className": "team", "objectId": teamSummary[i].objectId }, "key": "members" },
+            'hidden': { '$ne': true }
+          }
         }, ep.group('queryTeamMembers'))
       }
 
@@ -134,7 +127,7 @@ function onRequest(request, response, modules) {
       'table': 'task',
       'where': { 'company': companyId, 'status': { $in: [0, 1] } },
       "keys": 'team,assignee,deadline',
-      'count': 1,
+      'count': 1
     }, function(err, data) {
       var result = JSON.parse(data);
       var tasks = result.results;
@@ -152,8 +145,8 @@ function onRequest(request, response, modules) {
       }
       response.send({
         'mySummary': mySummary,
-        'teamSummary': teamSummary,
-        '数据查询耗时': new Date() - startTime,
+        'teamSummary': teamSummary
+        // '数据查询耗时': new Date() - startTime
       })
     });
   });

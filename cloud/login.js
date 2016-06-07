@@ -105,7 +105,10 @@ function onRequest(request, response, modules) {
         rel.query({
           'table': '_User',
           'keys': 'username,name,avatar,objectId',
-          'where': { "$relatedTo": { "object": { "__type": "Pointer", "className": "team", "objectId": teams[i].objectId }, "key": "members" } }
+          'where': { 
+            "$relatedTo": { "object": { "__type": "Pointer", "className": "team", "objectId": teams[i].objectId }, "key": "members" },
+            'hidden': { '$ne': true }
+          }
         }, ep.group('queryTeamMembers'))
       }
 

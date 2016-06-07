@@ -21,9 +21,9 @@ function onRequest(request, response, modules) {
       'taskId': request.body.objectId, //totest
       // 'status': 1 
     }
-  }
+  };
   var priorityDict = ['不紧急', '一般', '紧急', '非常紧急'];
-  var statusDict = ['暂停了', '启动了', '完成了', '搁置了'];
+  var statusDict = ['暂停了', '启动了', '完成了', '搁置了', '删除了'];
   var progressDict = ['0%', '25%', '50%', '75%'];
   var costHoursDict = {
     '0': '0小时',
@@ -36,7 +36,7 @@ function onRequest(request, response, modules) {
     '24': '3天',
     '32': '4天',
     '40': '5天'
-  }
+  };
 
   // 查询task信息
   rel.query({
@@ -78,6 +78,15 @@ function onRequest(request, response, modules) {
         push(task.followers[i], '你关注的' + task.assigneeName + '的')//通知关注者
       }
     }
+
+    // 推送给评论被@人
+    if(request.body.comment){
+      var comment = JSON.parse(request.body.comment) || {};
+      if(comment.atId){
+        push(comment.atId, task.assigneeName);
+      }
+    }
+    
 
     // 推送给非关注者
     // 注意：
@@ -164,11 +173,13 @@ function onRequest(request, response, modules) {
       data = JSON.parse(data);
       update.userName = data.name; // 查出更新人姓名
       update.userAvatar = 'http://file.bmob.cn/' + data.avatar.url;
+      // 修改标题推送
       if(request.body.title && request.body.title !== task.title){
         message.msg_content = update.userName + '将' + assigneeDisplayName + '工作<' + task.title + 
                               '>标题改为：' + request.body.title;
         doPush(userId)
       }
+      // 任务转派推送
       if(request.body.assignee && request.body.assignee !== task.assigneeId){
         message.extras.assignee = request.body.assignee;
         db.findOne({
@@ -179,23 +190,26 @@ function onRequest(request, response, modules) {
           message.msg_content = update.userName + '将' + assigneeDisplayName + '工作<' + task.title + 
                               '>转派给了' + data.name;
           doPush(userId);
-        })
+        });
         if(request.body.assignee !== update.userId){ //如果被转派人给更新人自己，通知被转派人
           message.msg_content = update.userName + '将' + (task.assigneeName === update.userName ? '他的' : task.assigneeName) + '的工作<' + task.title + 
                               '>转派给了你'; 
           doPush(request.body.assignee); 
         }
       }
+      // 工作量修改推送
       if(request.body.costHours && request.body.costHours != task.costHours){ // 可能类型不同，故使用非严格等于
         message.msg_content = update.userName + '将' + assigneeDisplayName + '工作<' + task.title +
                               '>的工作量由' + costHoursDict[task.costHours] + '改为' + costHoursDict[request.body.costHours];
         doPush(userId)
       }
+      // 优先级修改推送
       if(request.body.priority && request.body.priority != task.priority){ // 可能类型不同，故使用非严格等于
         message.msg_content = update.userName + '将' + assigneeDisplayName + '工作<' + task.title +
                               '>的优先级由' + priorityDict[parseInt(task.priority)] + '改为' + priorityDict[parseInt(request.body.priority)];
         doPush(userId)
       }
+      // 状态修改推送
       // if(request.body.status && request.body.status != task.status && request.body.status != 1){ //重启怎办？
       if(request.body.status && request.body.status != task.status){
         message.extras.status = parseInt(request.body.status);
@@ -203,38 +217,50 @@ function onRequest(request, response, modules) {
                               '>';
         doPush(userId)
       }
+      // 项目修改推送
       if(request.body.project && JSON.parse(request.body.project).name != task.projectName){
 
         message.msg_content = update.userName + '将' + assigneeDisplayName + '工作<' + task.title +
                               '>的项目改为：' + JSON.parse(request.body.project).name;
         doPush(userId)
       }
+      // 进度更新推送
       if(request.body.progress){
 
         message.msg_content = update.userName + '将' + assigneeDisplayName + '工作<' + task.title +
                               '>的进度更新为：' + progressDict[request.body.progress];
         doPush(userId)
       }
+      // 关注推送
       if(request.body.follower){
         message.msg_content = update.userName + (JSON.parse(request.body.follower).action === 'AddUnique' ? '关注了' : '取消关注了') + assigneeDisplayName + '工作<' + task.title +
                               '>';
         doPush(userId)
       }
+      // 点赞推送
       if(request.body.liker){
         if(JSON.parse(request.body.liker).action === 'AddUnique'){
           message.msg_content = update.userName + '觉得' + assigneeDisplayName + '工作<' + task.title + 
-                              '>挺赞的。';
+                              '>完成得挺赞的。';
         }else{
           message.msg_content = update.userName + '取消了对' + assigneeDisplayName + '工作<' + task.title + 
                               '>的点赞。';
         }
         doPush(userId)
       }
+      // 评论推送
       if(request.body.comment){
+        var comment = JSON.parse(request.body.comment) || {};
         message.msg_content = update.userName + '评论了' + assigneeDisplayName + '工作<' + task.title +
-                              '>：' + JSON.parse(request.body.comment).userMsg;
-        doPush(userId)
+                              '>：' + comment.userMsg;
+        doPush(userId);
+        if(comment.atId){
+          message.msg_content = update.userName + '在对' + assigneeDisplayName + '的工作<' + task.title +
+                              '>' + '的评论中@了你。';
+          doPush(userId);
+        }
       }
+      // 截止时间推送
       if(request.body.deadline){
         var deadline = new Date((request.body.deadline).replace(/-/g, '/'));
         update.deadline = (deadline.getMonth() + 1) + '月' + deadline.getDate() + '日';
@@ -243,7 +269,12 @@ function onRequest(request, response, modules) {
                               '>的截止时间由' + task.deadline + '改为' + update.deadline;
           doPush(userId)
         }
-        
+      }
+      // leader评价推送
+      if(request.body.value){
+        message.msg_content = update.userName + '给' + assigneeDisplayName + '工作<' + task.title +
+          '>评了' + request.body.value + '星, 评价理由: ' + (request.body.valueReason||'暂无');
+        doPush(userId)
       }
     })
     

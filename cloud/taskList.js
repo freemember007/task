@@ -41,7 +41,8 @@ function onRequest(request, response, modules) {
     'table': 'task',
     'where': condition,
     'include': 'assigner,assignee,team',
-    'limit': 300,
+    'limit': 200,
+    // 'updatedAt': { '$gt': { '__type': 'Date', 'iso': daysAgo } },
     'order': '-updatedAt'//按更新时间倒序排列
   }, function(err, data) {
     var results = JSON.parse(data).results;
@@ -55,11 +56,11 @@ function onRequest(request, response, modules) {
       results[i].followed = (results[i].followers || []).toString().indexOf(userId)!== -1 ? true : false;
       results[i].liked = (results[i].likers || []).toString().indexOf(userId)!== -1 ? true : false;
       if (status == 0) {
-        tasksData[0][0].tasks.push(results[i]) //无期限的
+        tasksData[0][0].tasks.push(results[i]); //无期限的
       }else if(status == 2){
-        tasksData[2][0].tasks.push(results[i]) //已完成的
+        tasksData[2][0].tasks.push(results[i]); //已完成的
       }else if(status == 3){
-        tasksData[3][0].tasks.push(results[i]) //已搁置的
+        tasksData[3][0].tasks.push(results[i]); //已搁置的
       }else {
         results[i].deadline = results[i].deadline || {
           '__type': 'Date',
@@ -107,7 +108,7 @@ function onRequest(request, response, modules) {
     }
 
     response.send(tasksData);
-  })
+  });
 
   // 日期分组排序方法
   function sortByDate(arr) {
@@ -134,7 +135,6 @@ function onRequest(request, response, modules) {
       }
     }
   }
-
 
 }
 exports.taskList = onRequest;
