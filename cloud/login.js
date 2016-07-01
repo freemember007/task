@@ -34,7 +34,7 @@ function onRequest(request, response, modules) {
   ep.once('userLogin', function() {
     rel.query({
       'table': 'team',
-      'keys': 'name, objectId',
+      // 'keys': 'name, objectId',
       'where': { 'members': userInfo.objectId }
     }, function(err, data) {
       var team = JSON.parse(data).results && JSON.parse(data).results[0];
