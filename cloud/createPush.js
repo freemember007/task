@@ -36,7 +36,12 @@ function onRequest(request, response, modules) {
   }, function(err, data) {
     data = JSON.parse(data);
     task.assignerName = data.name; //不变
-    task.assignerAvatar = 'http://file.bmob.cn/' + data.avatar.url;
+    if(data.avatar.url && data.avatar.url.indexOf('http') === -1){
+      task.assignerAvatar = 'http://file.bmob.cn/' + data.avatar.url;
+    }else{
+      task.assignerAvatar = data.avatar.url;
+    }
+    // task.assignerAvatar = 'http://file.bmob.cn/' + data.avatar.url;
     // 查询负责人姓名
     db.findOne({
       'table': '_User',
@@ -78,12 +83,12 @@ function onRequest(request, response, modules) {
             //2.1 如果指派人是自己，push boss
             if (task.assignerId === task.assigneeId) {
               task.assigneeName = '自己';
-              push(data.boss, message);
+              push(data.boss.objectId, message);
             //2.2 如果指派人是他人
             }else{
               // 且指派人不是老板，push boss
-              if(task.assignerId !== data.boss){
-                push(data.boss, message);
+              if(task.assignerId !== data.boss.objectId){
+                push(data.boss.objectId, message);
               }
               // push自己
               task.assigneeName = '你';
@@ -97,7 +102,7 @@ function onRequest(request, response, modules) {
   });
 
   function push(userId, message) {
-    message.msg_content = task.assignerName + '给' + task.assigneeName + '创建了新工作：' + 
+    message.msg_content = task.assignerName + '给' + task.assigneeName + '创建了新工作：' +
                           task.title + '，截止时间：' + task.deadline + '，工作量：' + task.costHours + '小时。';
     var pushBody = {
       'platform': ['android'],
@@ -128,59 +133,69 @@ function onRequest(request, response, modules) {
         'isRead': false
       }
     }, function(err, data) {
-      // response.send(data||err) 
+      // response.send(data||err)
+      sendSms(userId);
     });
 
     // 短信发送
-    db.getUserByObjectId({
-      'objectId': userId.objectId //为啥?
+    function sendSms(userId){
+      db.getUserByObjectId({
+        'objectId': userId
+      }, function(err, data) {
+        var mobilePhoneNumber = JSON.parse(data).mobilePhoneNumber;
+        // response.send(mobilePhoneNumber);
+        http.post({
+          url: 'http://node.diandianys.com/api/sms',
+          headers: {
+            'Content-Type': 'application/json' //这个必须有
+          },
+          body: JSON.stringify({
+            sms_param: {
+              'assignerName': task.assignerName, //待修改
+              'assigneeName': task.assigneeName, //待修改
+              title: task.title,
+              deadline: task.deadline,
+              costHours: task.costHours
+            },
+            rec_num: mobilePhoneNumber,
+            sms_template_code: 'SMS_11515421'
+          })
+        }, function(error, res, body) {
+          if (!error && res.statusCode == 200) {
+            response.send(body);
+          } else {
+            response.send(res.statusCode);
+          }
+        });
+      });
+    }
+
+
+
+    // 极光推送
+    db.find({
+      'table': 'devices',
+      'keys': 'pushId',
+      'where': {'userId': userId}
     }, function(err, data) {
-      var mobilePhoneNumber = JSON.parse(data).mobilePhoneNumber;
-      // response.send(mobilePhoneNumber);
-      http.post({
-        url: 'http://node.diandianys.com/api/sms',
-        body: JSON.stringify({
-          receiverMobile: mobilePhoneNumber,
-          assignerName: task.assignerName,
-          assigneeName: task.assigneeName,
-          title: task.title,
-          deadline: task.deadline,
-          costHours: task.costHours
-        })
-      }, function(error, res, body) {
+      // response.send(data) // 为什么有时为空？
+      var pushId = JSON.parse(data).results[0].pushId; // 假定推送人已存在，后面考虑可能不存在的情况
+      pushBody.audience.registration_id.push(pushId);
+      var options = {
+        url: 'https://api.jpush.cn/v3/push',
+        headers: {
+          'Authorization': 'Basic N2FkNTFmMGM5ODYzMDNkODU4NzNmZTk4OmU4NjA5MGVlMGI0OWRhNzBkMzU2Nzk2Yw==',
+        },
+        body: JSON.stringify(pushBody)
+      };
+      http.post(options, function(error, res, body) {
         if (!error && res.statusCode == 200) {
           response.send(body);
         } else {
           response.send(res.statusCode);
         }
-      });
-    });
-
-
-    // 极光推送
-    // db.find({
-    //   'table': 'devices',
-    //   'keys': 'pushId',
-    //   'where': {'userId': userId}
-    // }, function(err, data) {
-    //   // response.send(data) // 为什么有时为空？
-    //   var pushId = JSON.parse(data).results[0].pushId; // 假定推送人已存在，后面考虑可能不存在的情况
-    //   pushBody.audience.registration_id.push(pushId);
-    //   var options = {
-    //     url: 'https://api.jpush.cn/v3/push',
-    //     headers: {
-    //       'Authorization': 'Basic N2FkNTFmMGM5ODYzMDNkODU4NzNmZTk4OmU4NjA5MGVlMGI0OWRhNzBkMzU2Nzk2Yw==',
-    //     },
-    //     body: JSON.stringify(pushBody)
-    //   };
-    //   http.post(options, function(error, res, body) {
-    //     if (!error && res.statusCode == 200) {
-    //       response.send(body);
-    //     } else {
-    //       response.send(res.statusCode);
-    //     }
-    //   })
-    // })
+      })
+    })
 
   }
 

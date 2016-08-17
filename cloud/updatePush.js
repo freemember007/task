@@ -172,7 +172,11 @@ function onRequest(request, response, modules) {
     },function(err, data){
       data = JSON.parse(data);
       update.userName = data.name; // 查出更新人姓名
-      update.userAvatar = 'http://file.bmob.cn/' + data.avatar.url;
+      if(data.avatar.url && data.avatar.url.indexOf('http') === -1){
+        update.userAvatar = 'http://file.bmob.cn/' + data.avatar.url;
+      }else{
+        update.userAvatar = data.avatar.url;
+      }
       // 修改标题推送
       if(request.body.title && request.body.title !== task.title){
         message.msg_content = update.userName + '将' + assigneeDisplayName + '工作<' + task.title + 
@@ -253,7 +257,7 @@ function onRequest(request, response, modules) {
         var comment = JSON.parse(request.body.comment) || {};
         message.msg_content = update.userName + '评论了' + assigneeDisplayName + '工作<' + task.title +
                               '>：' + comment.userMsg;
-        doPush(userId);
+        doPush(userId, assigneeDisplayName); // 加assigneeDisplayName参数给短信通知时用
         if(comment.atId){
           message.msg_content = update.userName + '在对' + assigneeDisplayName + '的工作<' + task.title +
                               '>' + '的评论中@了你。';
@@ -280,7 +284,7 @@ function onRequest(request, response, modules) {
     
   }
 
-  function doPush(userId) {
+  function doPush(userId, assigneeDisplayName) {
     var pushBody = {
       'platform': ['android'],
       'audience': { 'registration_id': [] },
@@ -295,7 +299,7 @@ function onRequest(request, response, modules) {
         }
       },
       'message': message
-    }
+    };
     message.msg_content.replace(/\</g, '&#60;').replace(/\>/g, '&#62;');
     db.insert({
       'table': 'notification',
@@ -311,8 +315,44 @@ function onRequest(request, response, modules) {
       }
     }, function(err, data) {
       // response.send(data); //为什么保存的message.msg_content是乱码？
+      if(request.body.comment) sendSms(userId);
     });
 
+    // 短信发送(仅评论)
+    function sendSms(userId){
+      var comment = JSON.parse(request.body.comment) || {};
+      db.getUserByObjectId({
+        'objectId': userId
+      }, function(err, data) {
+        var mobilePhoneNumber = JSON.parse(data).mobilePhoneNumber;
+        // response.send(mobilePhoneNumber);
+        http.post({
+          url: 'http://node.diandianys.com/api/sms',
+          headers: {
+            'Content-Type': 'application/json' //这个必须有
+          },
+          body: JSON.stringify({
+            sms_param: {
+              leaderName: update.userName,
+              assigneeName: assigneeDisplayName,
+              title: task.title,
+              grade: comment.userMsg
+            },
+            rec_num: mobilePhoneNumber,
+
+            sms_template_code: 'SMS_12290177'
+          })
+        }, function(error, res, body) {
+          if (!error && res.statusCode == 200) {
+            response.send(body);
+          } else {
+            response.send(res.statusCode);
+          }
+        });
+      });
+    }
+
+    // 极光推送
     db.find({
       'table': 'devices',
       'keys': 'pushId',

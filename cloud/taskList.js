@@ -22,7 +22,8 @@ function onRequest(request, response, modules) {
     [{ 'groupName': '无期限的', 'subGroupName': '', 'tasks': [] }],
     [],
     [{ 'groupName': '已完成的', 'subGroupName': '', 'tasks': [] }],
-    [{ 'groupName': '已搁置的', 'subGroupName': '', 'tasks': [] }]
+    [{ 'groupName': '已搁置的', 'subGroupName': '', 'tasks': [] }],
+    [{ 'groupName': '指派的', 'subGroupName': '', 'tasks': [] }]
   ];
   var now = new Date();
   var nowString = now.toString();
@@ -35,7 +36,6 @@ function onRequest(request, response, modules) {
   var oneDay = 24 * 60 * 60 * 1000;
   var diff, monthAndDate, week;
   var weekFormat = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六']
-  var results = [];
 
   rel.query({
     'table': 'task',
@@ -107,7 +107,67 @@ function onRequest(request, response, modules) {
       }
     }
 
-    response.send(tasksData);
+    // 取Ta指派的任务
+    var queryObj = {assigner: request.body.objectId};
+    var teamMembers = [];
+    if(request.body.subject == 'team'){
+      rel.query({
+        'table': '_User',
+        'keys': 'objectId',
+        'where': {
+          "$relatedTo": { "object": { "__type": "Pointer", "className": "team", "objectId": request.body.objectId }, "key": "members" },
+          'hidden': { '$ne': true }
+        }
+      }, function (err, data) {
+        var members = JSON.parse(data).results;
+        for(var i=0; i<members.length; i++){
+          teamMembers.push(members[i].objectId);
+        }
+        queryObj = {
+          assigner: {'$in': teamMembers},
+          assignee: { '$ne': {'$in': teamMembers} }
+        };
+        rel.query({
+          'table': 'task',
+          'where': queryObj,
+          'include': 'assigner,assignee,team',
+          'limit': 50,
+          'order': '-updatedAt'
+        }, function(err, data) {
+          var results = JSON.parse(data).results;
+          for (var i = 0; i < results.length; i++) {
+            results[i].fileNum = results[i].file ? 1 : 0;
+            results[i].commentNum = results[i].comments ? results[i].comments.length : 0;
+            results[i].checklist = JSON.parse(results[i].checklist||'[]');
+            results[i].followed = (results[i].followers || []).toString().indexOf(userId)!== -1 ? true : false;
+            results[i].liked = (results[i].likers || []).toString().indexOf(userId)!== -1 ? true : false;
+            tasksData[4][0].tasks.push(results[i]); // Ta指派的
+          }
+          response.send(tasksData);
+        });
+      })
+    }else{
+      rel.query({
+        'table': 'task',
+        'where': queryObj,
+        'include': 'assigner,assignee,team',
+        'limit': 50,
+        'order': '-updatedAt'
+      }, function(err, data) {
+        var results = JSON.parse(data).results;
+        for (var i = 0; i < results.length; i++) {
+          results[i].fileNum = results[i].file ? 1 : 0;
+          results[i].commentNum = results[i].comments ? results[i].comments.length : 0;
+          results[i].checklist = JSON.parse(results[i].checklist||'[]');
+          results[i].followed = (results[i].followers || []).toString().indexOf(userId)!== -1 ? true : false;
+          results[i].liked = (results[i].likers || []).toString().indexOf(userId)!== -1 ? true : false;
+          tasksData[4][0].tasks.push(results[i]); // Ta指派的
+        }
+        response.send(tasksData);
+      });
+    }
+
+
   });
 
   // 日期分组排序方法

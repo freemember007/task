@@ -11,8 +11,8 @@ tool.initialize(options.app_key, options.rest_key);
 function server() {
   var path = require('path');
   tool.testInServer(path.resolve(__dirname, '../cloud/taskList.js'), {
-    'subject': 'assignee',
-    'objectId': 'cade16c9af' //汪超
+    'subject': 'team',
+    'objectId': 'T1rB777C' //汪超
   });
 }
 
