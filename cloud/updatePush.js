@@ -41,10 +41,12 @@ function onRequest(request, response, modules) {
   // 查询task信息
   rel.query({
     'table': 'task',
-    'include': 'assigner,assignee,company,team', //关联查询
+    'include': 'assigner,assignee,company,company.boss,team,team.leader', //关联查询
     'where': {'objectId': task.objectId}
   }, function (err, data) {
+    // response.send(data)
     data = JSON.parse(data).results[0];
+    taskObj = data; //原始对象,以备后用
     task.title = data.title;
     task.assignerId = data.assigner.objectId;
     task.assignerName = data.assigner.name; //不变
@@ -85,6 +87,37 @@ function onRequest(request, response, modules) {
       if (comment.atId) {
         push(comment.atId, task.assigneeName);
       }
+    }
+
+    // 如果更新内容是完成任务,检查任务人是否还是进行中任务,如果没有,发短信给上司
+    if (request.body.status == '2') {
+      rel.query({
+        'table': 'task',
+        'where': {
+          assignee: taskObj.assignee.objectId,
+          "status": 1
+        },
+        'limit': 0,
+        'count': 1
+      }, function (err, data) {
+        data = JSON.parse(data);
+        // response.send(data)
+        if(taskObj.assignee.objectId == taskObj.team.leader.objectId){ //如果是leader
+          var rec_num = taskObj.company.boss.mobilePhoneNumber;
+        }else{
+          var rec_num = taskObj.team.leader.mobilePhoneNumber;
+        }
+        if (data.count < 2) { //当没有任务时,实际应该为1,因为是先推送了再写数据库
+          sendSms({
+            sms_param: {
+              name: taskObj.assignee.name,
+              percent: '0%',
+            },
+            rec_num: rec_num,
+            sms_template_code: 'SMS_12185399'
+          })
+        }
+      });
     }
 
 
@@ -285,6 +318,8 @@ function onRequest(request, response, modules) {
   }
 
   function doPush(userId, assigneeDisplayName) {
+
+    //推送消息体
     var pushBody = {
       'platform': ['android'],
       'audience': {'registration_id': []},
@@ -300,7 +335,11 @@ function onRequest(request, response, modules) {
       },
       'message': message
     };
+
+    //使用安全字符
     message.msg_content.replace(/\</g, '&#60;').replace(/\>/g, '&#62;');
+
+    //将提醒信息插入数据库
     db.insert({
       'table': 'notification',
       'data': {
@@ -315,41 +354,14 @@ function onRequest(request, response, modules) {
       }
     }, function (err, data) {
       // response.send(data); //为什么保存的message.msg_content是乱码？
-      if (request.body.comment) sendSms(userId);
-      if (request.body.status == '2') {
-        rel.query({
-          'table': 'task',
-          'where': {
-            "$relatedTo": {
-              "object": {"__type": "Pointer", "className": "_User", "objectId": message.extras.assignee},
-              "status": "1"
-            },
-          },
-          'include': 'assigner,assignee,team',
-          'limit': 0,
-          'count': 1
+      // todo: 逻辑有点乱, 评论发短信应该从这里抽出来
+      if (request.body.comment){
+        var comment = JSON.parse(request.body.comment) || {};
+        db.getUserByObjectId({
+          'objectId': userId
         }, function (err, data) {
-          data = JSON.parse(data);
-          response.send(data)
-        });
-      }
-
-    });
-
-    // 短信发送(仅评论)
-    function sendSms(userId) {
-      var comment = JSON.parse(request.body.comment) || {};
-      db.getUserByObjectId({
-        'objectId': userId
-      }, function (err, data) {
-        var mobilePhoneNumber = JSON.parse(data).mobilePhoneNumber;
-        // response.send(mobilePhoneNumber);
-        http.post({
-          url: 'http://node.diandianys.com/api/sms',
-          headers: {
-            'Content-Type': 'application/json' //这个必须有
-          },
-          body: JSON.stringify({
+          var mobilePhoneNumber = JSON.parse(data).mobilePhoneNumber;
+          sendSms({
             sms_param: {
               leaderName: update.userName,
               assigneeName: assigneeDisplayName,
@@ -357,18 +369,11 @@ function onRequest(request, response, modules) {
               grade: comment.userMsg
             },
             rec_num: mobilePhoneNumber,
-
             sms_template_code: 'SMS_12290177'
           })
-        }, function (error, res, body) {
-          if (!error && res.statusCode == 200) {
-            response.send(body);
-          } else {
-            response.send(res.statusCode);
-          }
         });
-      });
-    }
+      };
+    });
 
     // 极光推送
     db.find({
@@ -395,6 +400,23 @@ function onRequest(request, response, modules) {
       })
     })
 
+  }
+
+  // 发送短信
+  function sendSms(params) {
+    http.post({
+      url: 'http://node.diandianys.com/api/sms',
+      headers: {
+        'Content-Type': 'application/json' //这个必须有
+      },
+      body: JSON.stringify(params)
+    }, function (error, res, body) {
+      if (!error && res.statusCode == 200) {
+        response.send(body);
+      } else {
+        response.send(res.statusCode);
+      }
+    });
   }
 
 
