@@ -175,7 +175,7 @@ function onRequest(request, response, modules) {
       if(data.avatar.url && data.avatar.url.indexOf('http') === -1){
         update.userAvatar = 'http://file.bmob.cn/' + data.avatar.url;
       }else{
-        // update.userAvatar = data.avatar.url;
+        update.userAvatar = data.avatar.url;
       }
       // 修改标题推送
       if(request.body.title && request.body.title !== task.title){
