@@ -12,16 +12,16 @@ function server() {
   var path = require('path');
   tool.testInServer(path.resolve(__dirname, '../cloud/updatePush.js'), 
     {
-      'objectId': '4e20f3d7c8',
+      'objectId': '9f10c1fa8b',
       'updaterId': '8DRM999C', //郭敏
       // 'title': '点点医生web原型', 
       // 'team': 'W98PFFFR',
       // 'assignee': 'EuGz444d',
       // 'costHours': 4,
       // 'priority': 3,
-      // 'status': 1,
+      'status': 2,
       // 'project': {"color":"#FF666666","name":"点点医院-微信"},
-      'progress': '0',
+      // 'progress': '0',
       // 'file': {'__type': 'File','filename': '1457932579348.png','group': 'group1','url': 'M03/E0/DF/oYYBAFbmSSmAJMEgAAKg1zYPZTU216.png'},
       // 'deadline': '2016-03-09 00:00:00',
       // 'follower': {'action': 'AddUnique' ,'objectId': 'EuGz444d'},
