@@ -69,6 +69,7 @@ function onRequest(request, response, modules) {
       'objectId': task.objectId,
       'data': relJson
     }, function(err, data) {
+      response.send(task)
       functions.run({
         'name': 'createPush',
         'data': {
@@ -86,7 +87,6 @@ function onRequest(request, response, modules) {
         //回调函数
         // response.send(data)
       });
-      response.send(task)
     })
   }
 

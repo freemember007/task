@@ -41,7 +41,7 @@ function onRequest(request, response, modules) {
     'table': 'task',
     'where': condition,
     'include': 'assigner,assignee,team',
-    'limit': 200,
+    'limit': 20,
     // 'updatedAt': { '$gt': { '__type': 'Date', 'iso': daysAgo } },
     'order': '-updatedAt'//按更新时间倒序排列
   }, function(err, data) {
@@ -107,6 +107,8 @@ function onRequest(request, response, modules) {
       }
     }
 
+    response.send(tasksData);
+
     // 取Ta指派的任务
     var queryObj = {assigner: request.body.objectId};
     var teamMembers = [];
@@ -131,7 +133,7 @@ function onRequest(request, response, modules) {
           'table': 'task',
           'where': queryObj,
           'include': 'assigner,assignee,team',
-          'limit': 50,
+          'limit': 10,
           'order': '-updatedAt'
         }, function(err, data) {
           var results = JSON.parse(data).results;
@@ -151,7 +153,7 @@ function onRequest(request, response, modules) {
         'table': 'task',
         'where': queryObj,
         'include': 'assigner,assignee,team',
-        'limit': 50,
+        'limit': 10,
         'order': '-updatedAt'
       }, function(err, data) {
         var results = JSON.parse(data).results;

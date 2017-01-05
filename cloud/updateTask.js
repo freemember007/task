@@ -36,6 +36,9 @@ function onRequest(request, response, modules) {
   var baseJson = {};
   var relJson = {};
   var arrJson = {};
+  
+  // 先返回了再说
+  // response.send(body)
 
   functions.run({
     'name': 'updatePush',
